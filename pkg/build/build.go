@@ -12,8 +12,6 @@ import (
 type Builder struct {
 	imageConfig *config.ImageConfig
 	context     *Context
-
-	combustionScripts []string
 }
 
 func New(imageConfig *config.ImageConfig, context *Context) *Builder {
@@ -24,17 +22,19 @@ func New(imageConfig *config.ImageConfig, context *Context) *Builder {
 }
 
 func (b *Builder) Build() error {
-	err := b.configureMessage()
-	if err != nil {
-		return fmt.Errorf("configuring the welcome message: %w", err)
-	}
-
-	err = b.configureScripts()
+	combustionScripts, err := b.configureScripts()
 	if err != nil {
 		return fmt.Errorf("configuring custom scripts: %w", err)
 	}
 
-	script, err := combustion.GenerateScript(b.combustionScripts)
+	messageScript, err := b.configureMessage()
+	if err != nil {
+		return fmt.Errorf("configuring the welcome message: %w", err)
+	}
+
+	combustionScripts = append(combustionScripts, messageScript)
+
+	script, err := combustion.GenerateScript(combustionScripts)
 	if err != nil {
 		return fmt.Errorf("generating combustion script: %w", err)
 	}
@@ -67,14 +67,6 @@ func (b *Builder) writeBuildDirFile(filename string, contents string, templateDa
 func (b *Builder) writeCombustionFile(filename string, contents string, templateData any) (string, error) {
 	destFilename := filepath.Join(b.context.CombustionDir, filename)
 	return destFilename, fileio.WriteFile(destFilename, contents, templateData)
-}
-
-func (b *Builder) registerCombustionScript(scriptName string) {
-	// Keep a running list of all added combustion scripts. When we add the combustion
-	// "script" file (the one Combustion itself looks at), we'll concatenate calls to
-	// each of these to that script.
-
-	b.combustionScripts = append(b.combustionScripts, scriptName)
 }
 
 func (b *Builder) generateOutputImageFilename() string {

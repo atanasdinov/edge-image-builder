@@ -41,10 +41,11 @@ func TestConfigureScripts(t *testing.T) {
 	}
 
 	// Test
-	err = builder.configureScripts()
+	scripts, err := builder.configureScripts()
 
 	// Verify
 	require.NoError(t, err)
+	assert.Equal(t, []string{"bar.sh", "foo.sh"}, scripts)
 
 	// - make sure the scripts were added to the build directory
 	foundDirListing, err := os.ReadDir(tmpDestDir)
@@ -58,10 +59,6 @@ func TestConfigureScripts(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, fs.FileMode(scriptMode), stats.Mode())
 	}
-
-	// - make sure entries were added to the combustion scripts list, so they are
-	//   present in the script file that is generated
-	assert.Equal(t, 2, len(builder.combustionScripts))
 }
 
 func TestConfigureScriptsNoScriptsDir(t *testing.T) {
@@ -77,10 +74,11 @@ func TestConfigureScriptsNoScriptsDir(t *testing.T) {
 	}
 
 	// Test
-	err = builder.configureScripts()
+	scripts, err := builder.configureScripts()
 
 	// Verify
 	require.NoError(t, err)
+	assert.Nil(t, scripts)
 }
 
 func TestConfigureScriptsEmptyScriptsDir(t *testing.T) {
@@ -102,9 +100,10 @@ func TestConfigureScriptsEmptyScriptsDir(t *testing.T) {
 	}
 
 	// Test
-	err = builder.configureScripts()
+	scripts, err := builder.configureScripts()
 
 	// Verify
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no scripts found in directory")
+	assert.ErrorContains(t, err, "no scripts found in directory")
+	assert.Nil(t, scripts)
 }

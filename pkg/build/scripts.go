@@ -13,27 +13,29 @@ const (
 	scriptMode = 0o744
 )
 
-func (b *Builder) configureScripts() error {
+func (b *Builder) configureScripts() ([]string, error) {
 	fullScriptsDir := filepath.Join(b.context.ImageConfigDir, scriptsDir)
 
 	// Nothing to do if the image config dir doesn't have the scripts directory
 	_, err := os.Stat(fullScriptsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil
+			return nil, nil
 		}
-		return fmt.Errorf("checking for scripts directory at %s: %w", fullScriptsDir, err)
+		return nil, fmt.Errorf("checking for scripts directory at %s: %w", fullScriptsDir, err)
 	}
 
 	dirListing, err := os.ReadDir(fullScriptsDir)
 	if err != nil {
-		return fmt.Errorf("reading the scripts directory at %s: %w", fullScriptsDir, err)
+		return nil, fmt.Errorf("reading the scripts directory at %s: %w", fullScriptsDir, err)
 	}
 
 	// If the directory exists but there's nothing in it, consider it an error case
 	if len(dirListing) == 0 {
-		return fmt.Errorf("no scripts found in directory %s", fullScriptsDir)
+		return nil, fmt.Errorf("no scripts found in directory %s", fullScriptsDir)
 	}
+
+	var scripts []string
 
 	for _, scriptEntry := range dirListing {
 		copyMe := filepath.Join(fullScriptsDir, scriptEntry.Name())
@@ -41,16 +43,15 @@ func (b *Builder) configureScripts() error {
 
 		err = fileio.CopyFile(copyMe, copyTo)
 		if err != nil {
-			return fmt.Errorf("copying script to %s: %w", copyTo, err)
+			return nil, fmt.Errorf("copying script to %s: %w", copyTo, err)
 		}
 		err = os.Chmod(copyTo, scriptMode)
 		if err != nil {
-			return fmt.Errorf("modifying permissions for script %s: %w", copyTo, err)
+			return nil, fmt.Errorf("modifying permissions for script %s: %w", copyTo, err)
 		}
 
-		// Make sure the combustion main script will execute the newly copied script
-		b.registerCombustionScript(scriptEntry.Name())
+		scripts = append(scripts, scriptEntry.Name())
 	}
 
-	return nil
+	return scripts, nil
 }

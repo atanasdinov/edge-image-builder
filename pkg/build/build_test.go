@@ -35,9 +35,6 @@ func TestWriteCombustionFile(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedFilename, writtenFilename)
 	assert.Equal(t, testData, string(foundData))
-
-	// Make sure the file isn't automatically added to the combustion scripts list
-	require.Equal(t, 0, len(builder.combustionScripts))
 }
 
 func TestWriteBuildDirFile(t *testing.T) {

@@ -12,12 +12,11 @@ const (
 //go:embed scripts/message/message.sh
 var messageScript string
 
-func (b *Builder) configureMessage() error {
+func (b *Builder) configureMessage() (string, error) {
 	_, err := b.writeCombustionFile(messageScriptName, messageScript, nil)
 	if err != nil {
-		return fmt.Errorf("copying script %s: %w", messageScriptName, err)
+		return "", fmt.Errorf("copying script %s: %w", messageScriptName, err)
 	}
-	b.registerCombustionScript(messageScriptName)
 
-	return nil
+	return messageScriptName, nil
 }
