@@ -1,18 +1,13 @@
 package build
 
 import (
-	_ "embed"
 	"fmt"
-	"os"
 	"path/filepath"
-	"slices"
 
+	"github.com/suse-edge/edge-image-builder/pkg/combustion"
 	"github.com/suse-edge/edge-image-builder/pkg/config"
 	"github.com/suse-edge/edge-image-builder/pkg/fileio"
 )
-
-//go:embed scripts/script_base.sh
-var combustionScriptBaseCode string
 
 type Builder struct {
 	imageConfig *config.ImageConfig
@@ -39,9 +34,13 @@ func (b *Builder) Build() error {
 		return fmt.Errorf("configuring custom scripts: %w", err)
 	}
 
-	err = b.generateCombustionScript()
+	script, err := combustion.GenerateScript(b.combustionScripts)
 	if err != nil {
 		return fmt.Errorf("generating combustion script: %w", err)
+	}
+
+	if _, err = b.writeCombustionFile("script", script, nil); err != nil {
+		return fmt.Errorf("writing combustion script: %w", err)
 	}
 
 	err = b.copyRPMs()
@@ -58,35 +57,6 @@ func (b *Builder) Build() error {
 		return fmt.Errorf("invalid imageType value specified, must be either \"%s\" or \"%s\"",
 			config.ImageTypeISO, config.ImageTypeRAW)
 	}
-}
-
-func (b *Builder) generateCombustionScript() error {
-	// The file must be located at "combustion/script"
-	scriptFilename := filepath.Join(b.context.CombustionDir, "script")
-	scriptFile, err := os.Create(scriptFilename)
-	if err != nil {
-		return fmt.Errorf("creating the combustion \"script\" file: %w", err)
-	}
-	defer scriptFile.Close()
-
-	// Write the script initialization lines
-	_, err = fmt.Fprintln(scriptFile, combustionScriptBaseCode)
-	if err != nil {
-		return fmt.Errorf("writing the combustion \"script\" basefile: %w", err)
-	}
-
-	// Add a call to each script that was added to the combustion directory
-	// We may need a better way of specifying the order, but for now use alphabetical
-	// so we have at least some determinism
-	slices.Sort(b.combustionScripts)
-	for _, filename := range b.combustionScripts {
-		_, err = fmt.Fprintln(scriptFile, "./"+filename)
-		if err != nil {
-			return fmt.Errorf("modifying the combustion script to add %s: %w", filename, err)
-		}
-	}
-
-	return nil
 }
 
 func (b *Builder) writeBuildDirFile(filename string, contents string, templateData any) (string, error) {
