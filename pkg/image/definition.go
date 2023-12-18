@@ -26,12 +26,25 @@ type Image struct {
 type OperatingSystem struct {
 	KernelArgs []string              `yaml:"kernelArgs"`
 	Users      []OperatingSystemUser `yaml:"users"`
+	Systemd    Systemd               `yaml:"systemd"`
+	Suma       Suma                  `yaml:"suma"`
 }
 
 type OperatingSystemUser struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 	SSHKey   string `yaml:"sshKey"`
+}
+
+type Systemd struct {
+	Enable  []string `yaml:"enable"`
+	Disable []string `yaml:"disable"`
+}
+
+type Suma struct {
+	Host          string `yaml:"host"`
+	ActivationKey string `yaml:"activationKey"`
+	GetSSL        bool   `yaml:"getSSL"`
 }
 
 func ParseDefinition(data []byte) (*Definition, error) {

@@ -16,20 +16,26 @@ func TestParse(t *testing.T) {
 
 	// Test
 	definition, err := ParseDefinition(configData)
-	require.NoError(t, err)
 
 	// Verify
+	require.NoError(t, err)
+
+	// - Definition
 	assert.Equal(t, "1.0", definition.APIVersion)
 	assert.Equal(t, "iso", definition.Image.ImageType)
+
+	// - Image
 	assert.Equal(t, "slemicro5.5.iso", definition.Image.BaseImage)
 	assert.Equal(t, "eibimage.iso", definition.Image.OutputImageName)
 
+	// - Operating System -> Kernel Arguments
 	expectedKernelArgs := []string{
 		"alpha=foo",
 		"beta=bar",
 	}
 	assert.Equal(t, expectedKernelArgs, definition.OperatingSystem.KernelArgs)
 
+	// Operating System -> Users
 	userConfigs := definition.OperatingSystem.Users
 	require.Len(t, userConfigs, 3)
 	assert.Equal(t, "alpha", userConfigs[0].Username)
@@ -41,6 +47,20 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, "gamma", userConfigs[2].Username)
 	assert.Equal(t, "", userConfigs[2].Password)
 	assert.Contains(t, userConfigs[2].SSHKey, "ssh-rsa BBBBB3")
+
+	// Operating System -> Systemd
+	systemd := definition.OperatingSystem.Systemd
+	require.Len(t, systemd.Enable, 2)
+	assert.Equal(t, "enable0", systemd.Enable[0])
+	assert.Equal(t, "enable1", systemd.Enable[1])
+	require.Len(t, systemd.Disable, 1)
+	assert.Equal(t, "disable0", systemd.Disable[0])
+
+	// Operating System -> Suma
+	suma := definition.OperatingSystem.Suma
+	assert.Equal(t, "suma.edge.suse.com", suma.Host)
+	assert.Equal(t, "slemicro55", suma.ActivationKey)
+	assert.Equal(t, false, suma.GetSSL)
 }
 
 func TestParseBadConfig(t *testing.T) {
