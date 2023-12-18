@@ -6,9 +6,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/suse-edge/edge-image-builder/pkg/fileio"
 	"github.com/suse-edge/edge-image-builder/pkg/template"
+	"go.uber.org/zap"
 )
 
 const (
@@ -33,8 +35,13 @@ func (b *Builder) buildRawImage() error {
 	}
 
 	cmd = b.createModifyCommand()
+
+	var out strings.Builder
+	cmd.Stdout = &out
+	cmd.Stderr = &out
 	err = cmd.Run()
 	if err != nil {
+		zap.L().With(zap.String("error", out.String())).Error("Failed to build raw image")
 		return fmt.Errorf("running the image modification script: %w", err)
 	}
 
