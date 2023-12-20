@@ -9,12 +9,16 @@ import (
 const (
 	TypeISO = "iso"
 	TypeRAW = "raw"
+
+	KubernetesTypeRKE2 = "rke2"
+	KubernetesTypeK3s  = "k3s"
 )
 
 type Definition struct {
 	APIVersion      string          `yaml:"apiVersion"`
 	Image           Image           `yaml:"image"`
 	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
+	Kubernetes      string          `yaml:"kubernetes"`
 }
 
 type Image struct {

@@ -68,6 +68,10 @@ func Configure(ctx *image.Context) error {
 			name:     sumaComponentName,
 			runnable: configureSuma,
 		},
+		{
+			name:     k8sComponentName,
+			runnable: configureKubernetes,
+		},
 	}
 
 	for _, component := range combustionComponents {
