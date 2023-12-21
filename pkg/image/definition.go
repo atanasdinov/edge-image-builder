@@ -18,7 +18,7 @@ type Definition struct {
 	APIVersion      string          `yaml:"apiVersion"`
 	Image           Image           `yaml:"image"`
 	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
-	Kubernetes      string          `yaml:"kubernetes"`
+	Kubernetes      Kubernetes      `yaml:"kubernetes"`
 }
 
 type Image struct {
@@ -49,6 +49,24 @@ type Suma struct {
 	Host          string `yaml:"host"`
 	ActivationKey string `yaml:"activationKey"`
 	GetSSL        bool   `yaml:"getSSL"`
+}
+
+type Kubernetes struct {
+	Distribution string   `yaml:"distribution"`
+	Type         string   `yaml:"type"`
+	Channel      string   `yaml:"channel"`
+	Version      string   `yaml:"version"`
+	Token        string   `yaml:"token"`
+	SELinux      bool     `yaml:"selinux"`
+	ServerURL    string   `yaml:"serverUrl"`
+	ConfigMode   string   `yaml:"configMode"`
+	CNI          string   `yaml:"cni"`
+	EnableMultus bool     `yaml:"enableMultus"`
+	SAN          []string `yaml:"san"`
+	Taints       []string `yaml:"taints"`
+	Labels       []string `yaml:"labels"`
+	Disable      []string `yaml:"disable"`
+	Debug        bool     `yaml:"debug"`
 }
 
 func ParseDefinition(data []byte) (*Definition, error) {
