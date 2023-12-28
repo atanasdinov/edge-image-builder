@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-{{- if .SELinux }}
+{{ if .SELinux -}}
 export RKE2_SELINUX=true
-# SELinux is only supported via the RPM method
+# SELinux is only supported via the RPM installation method
 export INSTALL_RKE2_METHOD=rpm
-{{- else }}
+{{- else -}}
 export INSTALL_RKE2_METHOD=tar
 # The default value (/usr/local) is not accessible at this point and mounting
 # it would simply redirect the RKE2 installer script to use /opt/rke2 anyway
@@ -30,9 +30,7 @@ export RKE2_TOKEN={{ .Token }}
 
 ./rke2_installer.sh
 
-# Update $PATH to include RKE2 binary
-echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc
-echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc
-source ~/.bashrc
+echo "export KUBECONFIG=/etc/rancher/rke2/rke2.yaml" >> ~/.bashrc
+echo "export PATH=${PATH}:/var/lib/rancher/rke2/bin" >> ~/.bashrc
 
-systemctl enable rke2-{{ .Type }}.service
+systemctl enable rke2-{{ or .Type "server" }}.service
