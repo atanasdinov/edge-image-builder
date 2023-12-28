@@ -1,24 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 
-# Mounting /usr/local is required by the RKE2 installer script
-mount /usr/local || true
+{{- if .SELinux }}
+export RKE2_SELINUX=true
+# SELinux is only supported via the RPM method
+export INSTALL_RKE2_METHOD=rpm
+{{- else }}
+export INSTALL_RKE2_METHOD=tar
+# The default value (/usr/local) is not accessible at this point and mounting
+# it would simply redirect the RKE2 installer script to use /opt/rke2 anyway
+export INSTALL_RKE2_TAR_PREFIX=/opt/rke2
+{{- end }}
 
 {{- if .Type }}
 export INSTALL_RKE2_TYPE={{ .Type }}
 {{- end }}
+
 {{- if .Channel }}
 export INSTALL_RKE2_CHANNEL={{ .Channel }}
 {{- end }}
+
 {{- if .Version }}
 export INSTALL_RKE2_VERSION={{ .Version }}
 {{- end }}
+
 {{- if .Token }}
 export RKE2_TOKEN={{ .Token }}
-{{- end }}
-{{- if .SELinux }}
-export RKE2_SELINUX=true
-export INSTALL_RKE2_METHOD=rpm
 {{- end }}
 
 ./rke2_installer.sh
