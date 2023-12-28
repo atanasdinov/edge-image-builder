@@ -4,7 +4,7 @@ set -euo pipefail
 # Mount /usr/local to store the RKE2 script
 mount /usr/local || true
 
-curl -L --output rke2_installer.sh https://get.rke2.io && install -m755 rke2_installer.sh /usr/local/bin/
+cp rke2_installer.sh /usr/local/bin/
 
 # Create a systemd unit that installs RKE2
 cat <<- EOF > /etc/systemd/system/rke2_installer.service
