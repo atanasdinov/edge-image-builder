@@ -12,6 +12,10 @@ type NetworkConfiguratorInstaller interface {
 	InstallConfigurator(imageName, sourcePath, installPath string) error
 }
 
+type KubernetesScriptInstaller interface {
+	InstallKubernetesScript(distro, sourcePath, destPath string) error
+}
+
 type Context struct {
 	// ImageConfigDir is the root directory storing all configuration files.
 	ImageConfigDir string
@@ -23,4 +27,5 @@ type Context struct {
 	ImageDefinition              *Definition
 	NetworkConfigGenerator       NetworkConfigGenerator
 	NetworkConfiguratorInstaller NetworkConfiguratorInstaller
+	KubernetesScriptInstaller    KubernetesScriptInstaller
 }

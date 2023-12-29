@@ -48,12 +48,16 @@ func configureKubernetes(ctx *image.Context) ([]string, error) {
 	}
 }
 
+func installKubernetesScript(ctx *image.Context) error {
+	sourcePath := "/" // root level of the container image
+	destPath := ctx.CombustionDir
+
+	return ctx.KubernetesScriptInstaller.InstallKubernetesScript(ctx.ImageDefinition.Kubernetes.Distribution, sourcePath, destPath)
+}
+
 func configureRKE2(ctx *image.Context) error {
-	const rke2Installer = "rke2_installer.sh"
-	installerSource := fmt.Sprintf("/%s", rke2Installer)
-	installerDestination := filepath.Join(ctx.CombustionDir, rke2Installer)
-	if err := fileio.CopyFile(installerSource, installerDestination, fileio.ExecutablePerms); err != nil {
-		return fmt.Errorf("copying rke2 installer: %w", err)
+	if err := installKubernetesScript(ctx); err != nil {
+		return fmt.Errorf("installing RKE2 script: %w", err)
 	}
 
 	data, err := template.Parse(rke2ConfigScript, rke2Config, &ctx.ImageDefinition.Kubernetes)
