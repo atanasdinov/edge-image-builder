@@ -24,8 +24,9 @@ export INSTALL_RKE2_CHANNEL={{ .Channel }}
 export INSTALL_RKE2_VERSION={{ .Version }}
 {{- end }}
 
-{{- if .Token }}
-export RKE2_TOKEN={{ .Token }}
+{{- if .ConfigFile }}
+mkdir -p /etc/rancher/rke2/
+cp {{ .ConfigFile }} /etc/rancher/rke2/config.yaml
 {{- end }}
 
 ./rke2_installer.sh

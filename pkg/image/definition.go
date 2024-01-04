@@ -52,21 +52,11 @@ type Suma struct {
 }
 
 type Kubernetes struct {
-	Distribution string   `yaml:"distribution"`
-	Type         string   `yaml:"type"`
-	Channel      string   `yaml:"channel"`
-	Version      string   `yaml:"version"`
-	Token        string   `yaml:"token"`
-	SELinux      bool     `yaml:"selinux"`
-	ServerURL    string   `yaml:"serverUrl"`
-	ConfigMode   string   `yaml:"configMode"`
-	CNI          string   `yaml:"cni"`
-	EnableMultus bool     `yaml:"enableMultus"`
-	SAN          []string `yaml:"san"`
-	Taints       []string `yaml:"taints"`
-	Labels       []string `yaml:"labels"`
-	Disable      []string `yaml:"disable"`
-	Debug        bool     `yaml:"debug"`
+	Distribution string `yaml:"distribution"`
+	Type         string `yaml:"type"`
+	Channel      string `yaml:"channel"`
+	Version      string `yaml:"version"`
+	SELinux      bool   `yaml:"selinux"`
 }
 
 func ParseDefinition(data []byte) (*Definition, error) {

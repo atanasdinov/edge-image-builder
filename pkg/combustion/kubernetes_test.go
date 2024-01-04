@@ -81,7 +81,7 @@ func TestConfigureRKE2(t *testing.T) {
 		ctx.KubernetesScriptInstaller = test.scriptInstaller
 
 		t.Run(test.name, func(t *testing.T) {
-			err := configureRKE2(ctx)
+			_, err := configureRKE2(ctx)
 
 			if test.expectedErr != "" {
 				require.Error(t, err)
@@ -89,7 +89,7 @@ func TestConfigureRKE2(t *testing.T) {
 				return
 			}
 
-			// TODO: Verify output scripts' contents
+			// TODO: Verify output script contents
 			assert.NoError(t, err)
 		})
 	}
