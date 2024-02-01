@@ -1,0 +1,13 @@
+module rke2-eib 1.0;
+
+require {
+	type usr_t;
+	type container_t;
+	class dir { add_name write };
+	class file { create write };
+}
+
+#============= container_t ==============
+
+allow container_t usr_t:dir { add_name write };
+allow container_t usr_t:file { create write };
