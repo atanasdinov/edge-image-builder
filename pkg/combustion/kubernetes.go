@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -48,6 +49,9 @@ var (
 
 	//go:embed templates/k8s-vip.yaml.tpl
 	k8sVIPManifest string
+
+	//go:embed templates/rke2-eib.te
+	selinuxModuleSource string
 )
 
 func configureKubernetes(ctx *image.Context) ([]string, error) {
@@ -132,6 +136,16 @@ func configureK3S(ctx *image.Context, cluster *kubernetes.Cluster) (string, erro
 		return "", fmt.Errorf("configuring kubernetes manifests: %w", err)
 	}
 
+	var selinuxModule string
+
+	if cluster.SELinuxEnabled() {
+		if selinuxModule, err = configureSELinux(ctx); err != nil {
+			if err != nil {
+				return "", fmt.Errorf("creating SELinux module: %w", err)
+			}
+		}
+	}
+
 	templateValues := map[string]any{
 		"apiVIP":          ctx.ImageDefinition.Kubernetes.Network.APIVIP,
 		"apiHost":         ctx.ImageDefinition.Kubernetes.Network.APIHost,
@@ -139,6 +153,7 @@ func configureK3S(ctx *image.Context, cluster *kubernetes.Cluster) (string, erro
 		"imagesPath":      imagesPath,
 		"manifestsPath":   manifestsPath,
 		"registryMirrors": registryMirrorsFileName,
+		"selinuxModule":   selinuxModule,
 	}
 
 	singleNode := len(ctx.ImageDefinition.Kubernetes.Nodes) < 2
@@ -177,6 +192,45 @@ func configureK3S(ctx *image.Context, cluster *kubernetes.Cluster) (string, erro
 	templateValues["vipManifest"] = vipManifest
 
 	return storeKubernetesInstaller(ctx, "multi-node-k3s", k3sMultiNodeInstaller, templateValues)
+}
+
+func configureSELinux(ctx *image.Context) (string, error) {
+	const (
+		rke2SELinuxModuleSource = "rke2-eib.te"
+		rke2SELinuxModuleBinary = "rke2-eib.pp"
+		logFileName             = "selinux.log"
+	)
+
+	policySource := filepath.Join(ctx.BuildDir, rke2SELinuxModuleSource)
+	if err := os.WriteFile(policySource, []byte(selinuxModuleSource), fileio.NonExecutablePerms); err != nil {
+		return "", fmt.Errorf("storing selinux module source: %w", err)
+	}
+
+	logFile, err := os.Create(filepath.Join(ctx.BuildDir, logFileName))
+	if err != nil {
+		return "", fmt.Errorf("creating selinux log file: %w", err)
+	}
+	defer func() {
+		if err = logFile.Close(); err != nil {
+			zap.S().Warnf("Failed to close selinux log file properly: %v", err)
+		}
+	}()
+
+	policyBinary := filepath.Join(ctx.BuildDir, rke2SELinuxModuleBinary)
+
+	cmd := exec.Command("make", "-f", "/usr/share/selinux/devel/Makefile", policyBinary)
+	cmd.Stdout = logFile
+	cmd.Stderr = logFile
+
+	if err = cmd.Run(); err != nil {
+		return "", fmt.Errorf("compiling selinux module: %w", err)
+	}
+
+	if err = fileio.CopyFile(policyBinary, filepath.Join(ctx.CombustionDir, rke2SELinuxModuleBinary), fileio.NonExecutablePerms); err != nil {
+		return "", fmt.Errorf("copying selinux module: %w", err)
+	}
+
+	return rke2SELinuxModuleBinary, nil
 }
 
 func downloadK3sArtefacts(ctx *image.Context) (binaryPath, imagesPath string, err error) {

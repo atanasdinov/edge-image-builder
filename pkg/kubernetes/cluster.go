@@ -266,6 +266,14 @@ func appendDisabledServices(config map[string]any, service string) {
 	}
 }
 
+func (c *Cluster) SELinuxEnabled() bool {
+	if enabled, ok := c.ServerConfig["selinux"].(bool); ok {
+		return enabled
+	}
+
+	return false
+}
+
 func ServersCount(nodes []image.Node) int {
 	var servers int
 
