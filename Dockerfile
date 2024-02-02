@@ -15,6 +15,9 @@ RUN go build ./cmd/eib
 # ----- Deliverable Image -----
 FROM opensuse/leap:15.5
 
+RUN zypper addrepo \
+    https://download.opensuse.org/repositories/security:SELinux/openSUSE_Factory/security:SELinux.repo
+
 # Dependency uses by line
 # 1. ISO image building
 # 2. RAW image modification on x86_64
