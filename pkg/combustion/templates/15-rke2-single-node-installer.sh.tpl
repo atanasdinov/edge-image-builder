@@ -29,9 +29,10 @@ cp {{ .configFile }} /etc/rancher/rke2/config.yaml
 cp {{ .registryMirrors }} /etc/rancher/rke2/registries.yaml
 {{- end }}
 
-export INSTALL_RKE2_TAR_PREFIX=/opt/rke2
 export INSTALL_RKE2_ARTIFACT_PATH={{ .installPath }}
 
+mount /usr/local
 ./rke2_installer.sh
+umount /usr/local
 
 systemctl enable rke2-server.service
