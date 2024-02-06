@@ -16,7 +16,7 @@ RUN go build ./cmd/eib
 FROM opensuse/leap:15.5
 
 RUN zypper addrepo https://download.opensuse.org/repositories/isv:Rancher:Elemental:Dev/standard/isv:Rancher:Elemental:Dev.repo && \
-  zypper refresh && \
+  zypper --gpg-auto-import-keys refresh && \
   zypper download elemental-system-agent && \
   ls /var/cache/zypp/packages
 
