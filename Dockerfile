@@ -15,6 +15,11 @@ RUN go build ./cmd/eib
 # ----- Deliverable Image -----
 FROM opensuse/leap:15.5
 
+RUN zypper addrepo https://download.opensuse.org/repositories/isv:Rancher:Elemental:Dev/standard/isv:Rancher:Elemental:Dev.repo && \
+  zypper refresh && \
+  zypper download elemental-system-agent && \
+  ls /var/cache/zypp/packages
+
 # Dependency uses by line
 # 1. ISO image building
 # 2. RAW image modification on x86_64
