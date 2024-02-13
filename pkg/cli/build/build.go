@@ -225,17 +225,29 @@ func downloadKubernetesSELinuxPolicies(ctx *image.Context) error {
 	audit.AuditInfo("SELinux is enabled in the Kubernetes configuration. " +
 		"The necessary RPM packages will be downloaded.")
 
-	rpmDir := combustion.RPMsPath(ctx)
-	if err = os.MkdirAll(rpmDir, os.ModePerm); err != nil {
-		return fmt.Errorf("creating directory '%s': %w", rpmDir, err)
-	}
+	//https://rpm.rancher.io/rke2/stable/common/slemicro/noarch
+	packageList := ctx.ImageDefinition.OperatingSystem.Packages.PKGList
+	packageList = append(packageList, "rke2-selinux")
 
-	gpgKeysDir := combustion.GPGKeysPath(ctx)
-	if err = os.MkdirAll(gpgKeysDir, os.ModePerm); err != nil {
-		return fmt.Errorf("creating directory '%s': %w", gpgKeysDir, err)
-	}
+	repositories := ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos
+	repositories = append(repositories,
+		image.AddRepo{URL: "https://rpm.rancher.io/rke2/stable/common/slemicro/noarch"})
 
-	return kubernetes.DownloadSELinuxRPMs(&ctx.ImageDefinition.Kubernetes, rpmDir, gpgKeysDir)
+	ctx.ImageDefinition.OperatingSystem.Packages.PKGList = packageList
+	ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos = repositories
+
+	return nil
+	//rpmDir := combustion.RPMsPath(ctx)
+	//if err = os.MkdirAll(rpmDir, os.ModePerm); err != nil {
+	//	return fmt.Errorf("creating directory '%s': %w", rpmDir, err)
+	//}
+	//
+	//gpgKeysDir := combustion.GPGKeysPath(ctx)
+	//if err = os.MkdirAll(gpgKeysDir, os.ModePerm); err != nil {
+	//	return fmt.Errorf("creating directory '%s': %w", gpgKeysDir, err)
+	//}
+	//
+	//return kubernetes.DownloadSELinuxRPMs(&ctx.ImageDefinition.Kubernetes, rpmDir, gpgKeysDir)
 }
 
 func appendElementalRPMs(ctx *image.Context) {
