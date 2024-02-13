@@ -231,7 +231,7 @@ func downloadKubernetesSELinuxPolicies(ctx *image.Context) error {
 
 	repositories := ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos
 	repositories = append(repositories,
-		image.AddRepo{URL: "https://rpm.rancher.io/rke2/stable/common/slemicro/noarch"})
+		image.AddRepo{URL: "https://rpm.rancher.io/rke2/stable/common/slemicro"})
 
 	ctx.ImageDefinition.OperatingSystem.Packages.PKGList = packageList
 	ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos = repositories
