@@ -39,19 +39,6 @@ RUN zypper ar {{ $gpgCheck }} -f {{ .URL }} addrepo {{- $index }}
 
 {{ end -}}
 
-{{- range $index, $repo := .AddRepo }}
-
-{{- $gpgCheck := "" -}}
-{{- if $.NoGPGCheck -}}
-{{ $gpgCheck = "--no-gpgcheck" }}
-{{- else if .Unsigned -}}
-{{ $gpgCheck = "--gpgcheck-allow-unsigned-repo" }}
-{{- end -}}
-
-RUN zypper ar {{ $gpgCheck }} -f {{ .URL }} addrepo {{- $index }}
-
-{{ end }}
-
 {{ if and .LocalGPGList (not .NoGPGCheck) }}
 RUN rpm --import {{ .LocalGPGList }}
 {{ end -}}
