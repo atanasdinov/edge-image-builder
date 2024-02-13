@@ -229,7 +229,7 @@ func appendKubernetesSELinuxRPMs(ctx *image.Context) error {
 	packageList = append(packageList, kubernetes.SELinuxPackage)
 
 	repositories := ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos
-	repositories = append(repositories, kubernetes.SELinuxRepository)
+	repositories = append(repositories, kubernetes.SELinuxRepository(ctx.ImageDefinition.Kubernetes.Version))
 
 	ctx.ImageDefinition.OperatingSystem.Packages.PKGList = packageList
 	ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos = repositories
