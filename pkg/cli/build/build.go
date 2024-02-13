@@ -226,7 +226,7 @@ func appendKubernetesSELinuxRPMs(ctx *image.Context) error {
 		"The necessary RPM packages will be downloaded.")
 
 	packageList := ctx.ImageDefinition.OperatingSystem.Packages.PKGList
-	packageList = append(packageList, kubernetes.SELinuxPackage)
+	packageList = append(packageList, kubernetes.SELinuxPackage(ctx.ImageDefinition.Kubernetes.Version))
 
 	repositories := ctx.ImageDefinition.OperatingSystem.Packages.AdditionalRepos
 	repositories = append(repositories, kubernetes.SELinuxRepository(ctx.ImageDefinition.Kubernetes.Version))

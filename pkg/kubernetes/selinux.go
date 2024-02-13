@@ -10,7 +10,22 @@ import (
 	"github.com/suse-edge/edge-image-builder/pkg/image"
 )
 
-var SELinuxPackage = "rke2-selinux"
+func SELinuxPackage(version string) string {
+	const (
+		k3sPackage  = "k3s-selinux"
+		rke2Package = "rke2-selinux"
+	)
+
+	switch {
+	case strings.Contains(version, image.KubernetesDistroK3S):
+		return k3sPackage
+	case strings.Contains(version, image.KubernetesDistroRKE2):
+		return rke2Package
+	default:
+		message := fmt.Sprintf("invalid kubernetes version: %s", version)
+		panic(message)
+	}
+}
 
 func SELinuxRepository(version string) image.AddRepo {
 	const (
