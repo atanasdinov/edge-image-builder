@@ -19,8 +19,7 @@ const (
 	elementalScriptName    = "31-elemental.sh"
 	elementalConfigName    = "elemental_config.yaml"
 
-	// TODO: Use an official repository URL once it's out
-	ElementalPackageRepository = "https://download.opensuse.org/repositories/isv:/Rancher:/Elemental:/Staging/standard/"
+	ElementalPackageRepository = "https://updates.suse.com/SUSE/Products/Elemental/5.5/x86_64/product"
 )
 
 var (
