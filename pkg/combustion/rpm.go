@@ -89,7 +89,7 @@ func SkipRPMComponent(ctx *image.Context) bool {
 		// isComponentConfigured will indicate if the directory exists, but not
 		// if there are RPMs in there. If there aren't any, it is still possible to
 		// continue if there have been packages specified in the definition.
-		rpmsDir := RPMsPath(ctx)
+		rpmsDir := rpmPath(ctx)
 
 		dirListing, err := os.ReadDir(rpmsDir)
 		if err != nil {
@@ -162,13 +162,17 @@ func writeRPMScript(ctx *image.Context, repoPath string, packages []string) (str
 	return installRPMsScriptName, nil
 }
 
-func RPMsPath(ctx *image.Context) string {
+func rpmPath(ctx *image.Context) string {
 	return generateComponentPath(ctx, rpmDir)
 }
 
-func GPGKeysPath(ctx *image.Context) string {
-	rpmDir := RPMsPath(ctx)
+func gpgKeysConfigPath(ctx *image.Context) string {
+	rpmDir := rpmPath(ctx)
 	return filepath.Join(rpmDir, gpgDir)
+}
+
+func GPGKeysBuildPath(ctx *image.Context) string {
+	return filepath.Join(ctx.BuildDir, gpgDir)
 }
 
 func fetchLocalRPMConfig(ctx *image.Context) (*image.LocalRPMConfig, error) {
@@ -177,28 +181,42 @@ func fetchLocalRPMConfig(ctx *image.Context) (*image.LocalRPMConfig, error) {
 	}
 
 	localRPMConfig := &image.LocalRPMConfig{
-		RPMPath: RPMsPath(ctx),
+		RPMPath: rpmPath(ctx),
 	}
 
 	gpgCheckDisabled := ctx.ImageDefinition.OperatingSystem.Packages.NoGPGCheck
-	gpgPath := GPGKeysPath(ctx)
+	gpgConfigPath := gpgKeysConfigPath(ctx)
+	gpgBuildPath := GPGKeysBuildPath(ctx)
 
-	if entries, err := os.ReadDir(gpgPath); err == nil {
+	err := fileio.CopyFiles(gpgConfigPath, gpgBuildPath, "", false)
+
+	switch {
+	case err == nil:
+		// Provided GPG keys are successfully copied under the build directory
+	case errors.Is(err, fs.ErrNotExist):
+		// Proceed as normal, GPG keys required by RPMs necessary for the combustion components might already exist
+	case errors.Is(err, fileio.ErrEmptyDir):
+		return nil, fmt.Errorf("GPG keys directory exists but it is empty")
+	default:
+		return nil, fmt.Errorf("copying GPG keys: %w", err)
+	}
+
+	if entries, err := os.ReadDir(gpgBuildPath); err == nil {
 		if gpgCheckDisabled {
-			return nil, fmt.Errorf("found existing '%s' directory, but GPG validation is disabled", gpgDir)
+			return nil, fmt.Errorf("GPG keys directory exists but GPG validation is disabled")
 		}
 
 		if len(entries) == 0 {
-			return nil, fmt.Errorf("'%s' directory exists but it is empty", gpgDir)
+			return nil, fmt.Errorf("GPG keys build directory exists but it is empty")
 		}
 
-		localRPMConfig.GPGKeysPath = gpgPath
+		localRPMConfig.GPGKeysPath = gpgBuildPath
 	} else if !gpgCheckDisabled {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("GPG validation is enabled, but '%s' directory is missing for side-loaded RPMs", gpgDir)
+			return nil, fmt.Errorf("GPG validation is enabled but GPG keys directory is missing for side-loaded RPMs")
 		}
 
-		return nil, fmt.Errorf("reading GPG directory at '%s': %w", gpgPath, err)
+		return nil, fmt.Errorf("reading GPG directory at '%s': %w", gpgBuildPath, err)
 	}
 
 	return localRPMConfig, nil

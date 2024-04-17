@@ -196,7 +196,7 @@ func appendKubernetesSELinuxRPMs(ctx *image.Context) error {
 
 	appendRPMs(ctx, repository, selinuxPackage)
 
-	gpgKeysDir := combustion.GPGKeysPath(ctx)
+	gpgKeysDir := combustion.GPGKeysBuildPath(ctx)
 	if err = os.MkdirAll(gpgKeysDir, os.ModePerm); err != nil {
 		return fmt.Errorf("creating directory '%s': %w", gpgKeysDir, err)
 	}

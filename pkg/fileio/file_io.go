@@ -17,6 +17,8 @@ const (
 	NonExecutablePerms os.FileMode = 0o644
 )
 
+var ErrEmptyDir = errors.New("directory is empty")
+
 func CopyFile(src string, dest string, perms os.FileMode) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {
@@ -81,6 +83,10 @@ func CopyFiles(src, dest, ext string, copySubDir bool) error {
 	files, err := os.ReadDir(src)
 	if err != nil {
 		return fmt.Errorf("reading source dir: %w", err)
+	}
+
+	if len(files) == 0 {
+		return ErrEmptyDir
 	}
 
 	if err = os.MkdirAll(dest, os.ModePerm); err != nil {

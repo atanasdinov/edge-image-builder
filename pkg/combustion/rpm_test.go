@@ -222,60 +222,58 @@ func TestConfigureRPMs_ResolutionFailures(t *testing.T) {
 	}
 }
 
-func TestConfigureRPMs_GPGFailures(t *testing.T) {
+func TestConfigureRPMs_EmptyGPGDir(t *testing.T) {
 	ctx, teardown := setupContext(t)
 	defer teardown()
 
-	rpmDir := filepath.Join(ctx.ImageConfigDir, rpmDir)
-	require.NoError(t, os.Mkdir(rpmDir, 0o755))
-	defer func() {
-		require.NoError(t, os.RemoveAll(rpmDir))
-	}()
+	require.NoError(t, os.MkdirAll(filepath.Join(ctx.ImageConfigDir, rpmDir, gpgDir), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(ctx.ImageConfigDir, rpmDir, "test.rpm"), nil, 0o600))
 
-	require.NoError(t, os.WriteFile(filepath.Join(rpmDir, "test.rpm"), nil, 0o600))
+	_, err := configureRPMs(ctx)
+	require.Error(t, err)
+	assert.EqualError(t, err, "fetching local RPM config: GPG keys directory exists but it is empty")
+}
 
-	tests := []struct {
-		name         string
-		expectedErr  string
-		pkgs         image.Packages
-		createGPGDir bool
-	}{
-		{
-			name:         "Disabled GPG validation, but existing GPG dir",
-			createGPGDir: true,
-			pkgs: image.Packages{
-				NoGPGCheck: true,
-			},
-			expectedErr: "fetching local RPM config: found existing 'gpg-keys' directory, but GPG validation is disabled",
-		},
-		{
-			name:         "Enabled GPG validation, but empty GPG dir",
-			createGPGDir: true,
-			expectedErr:  "fetching local RPM config: 'gpg-keys' directory exists but it is empty",
-		},
-		{
-			name:        "Enabled GPG validation, but missing GPG dir",
-			pkgs:        image.Packages{},
-			expectedErr: "fetching local RPM config: GPG validation is enabled, but 'gpg-keys' directory is missing for side-loaded RPMs",
-		},
-	}
+func TestConfigureRPMs_EmptyGPGBuildDir(t *testing.T) {
+	ctx, teardown := setupContext(t)
+	defer teardown()
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ctx.ImageDefinition.OperatingSystem.Packages = test.pkgs
+	require.NoError(t, os.MkdirAll(filepath.Join(ctx.ImageConfigDir, rpmDir), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(ctx.ImageConfigDir, rpmDir, "test.rpm"), nil, 0o600))
 
-			gpgDir := filepath.Join(rpmDir, gpgDir)
-			if test.createGPGDir {
-				require.NoError(t, os.Mkdir(gpgDir, 0o755))
-			}
+	// Simulate dir creation for a combustion component
+	require.NoError(t, os.MkdirAll(GPGKeysBuildPath(ctx), 0o755))
 
-			_, err := configureRPMs(ctx)
-			require.Error(t, err)
-			assert.EqualError(t, err, test.expectedErr)
+	_, err := configureRPMs(ctx)
+	require.Error(t, err)
+	assert.EqualError(t, err, "fetching local RPM config: GPG keys build directory exists but it is empty")
+}
 
-			require.NoError(t, os.RemoveAll(gpgDir))
-		})
-	}
+func TestConfigureRPMs_ExistingGPGDir_DisabledValidation(t *testing.T) {
+	ctx, teardown := setupContext(t)
+	defer teardown()
+
+	ctx.ImageDefinition.OperatingSystem.Packages.NoGPGCheck = true
+
+	require.NoError(t, os.MkdirAll(filepath.Join(ctx.ImageConfigDir, rpmDir, gpgDir), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(ctx.ImageConfigDir, rpmDir, "test.rpm"), nil, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(ctx.ImageConfigDir, rpmDir, gpgDir, "test.key"), nil, 0o600))
+
+	_, err := configureRPMs(ctx)
+	require.Error(t, err)
+	assert.EqualError(t, err, "fetching local RPM config: GPG keys directory exists but GPG validation is disabled")
+}
+
+func TestConfigureRPMs_MissingGPGDir(t *testing.T) {
+	ctx, teardown := setupContext(t)
+	defer teardown()
+
+	require.NoError(t, os.MkdirAll(filepath.Join(ctx.ImageConfigDir, rpmDir), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(ctx.ImageConfigDir, rpmDir, "test.rpm"), nil, 0o600))
+
+	_, err := configureRPMs(ctx)
+	require.Error(t, err)
+	assert.EqualError(t, err, "fetching local RPM config: GPG validation is enabled but GPG keys directory is missing for side-loaded RPMs")
 }
 
 func TestConfigureRPMs_SuccessfulConfig(t *testing.T) {
@@ -301,10 +299,10 @@ func TestConfigureRPMs_SuccessfulConfig(t *testing.T) {
 		require.NoError(t, os.RemoveAll(rpmDir))
 	}()
 
-	gpgDir := filepath.Join(rpmDir, gpgDir)
-	require.NoError(t, os.Mkdir(gpgDir, 0o755))
+	gpgConfigDir := filepath.Join(rpmDir, gpgDir)
+	require.NoError(t, os.Mkdir(gpgConfigDir, 0o755))
 
-	require.NoError(t, os.WriteFile(filepath.Join(gpgDir, "some-key"), nil, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(gpgConfigDir, "some-key"), nil, 0o600))
 
 	ctx.RPMRepoCreator = mockRPMRepoCreator{
 		createFunc: func(path string) error {
@@ -320,8 +318,10 @@ func TestConfigureRPMs_SuccessfulConfig(t *testing.T) {
 			if rpmDir != localRPMConfig.RPMPath {
 				return "", nil, fmt.Errorf("rpm path mismatch. Expected %s, got %s", rpmDir, localRPMConfig.RPMPath)
 			}
-			if gpgDir != localRPMConfig.GPGKeysPath {
-				return "", nil, fmt.Errorf("gpg path mismatch. Expected %s, got %s", gpgDir, localRPMConfig.GPGKeysPath)
+
+			gpgBuildDir := filepath.Join(ctx.BuildDir, gpgDir)
+			if gpgBuildDir != localRPMConfig.GPGKeysPath {
+				return "", nil, fmt.Errorf("gpg path mismatch. Expected %s, got %s", gpgBuildDir, localRPMConfig.GPGKeysPath)
 			}
 
 			return expectedDir, expectedPkg, nil
